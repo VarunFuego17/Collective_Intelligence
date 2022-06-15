@@ -16,7 +16,7 @@ class AggregationConfig(Config):
     a: float = 2.6
     b: float = 2.2
     
-    t: int = round(r.normal(30,100)) # t = t_join = t_leave
+    t: int = 20 + round(r.normal(0,20)) # t = t_join = t_leave
     d: int = 300 # number of time steps between each p_leave is evaluated
     w: int = 500 # number of time steps it takes to move agent of site if not deciding to join or leaving
 
@@ -42,6 +42,7 @@ class Bee(Agent):
         if self.on_site():
             if self.w_step == w:
                 if p_join > uniform_roll:
+                    print(f'Joining Site: {self.id}')
                     self.state = 1
             else:
                 self.w_step -=1
@@ -55,11 +56,7 @@ class Bee(Agent):
         if self.t_step == t:
             
             self.t_step = 0
-            
-            if self.on_site():
-                self.state = 2
-            else:
-                self.state = 0
+            self.state = 2
         else:
             self.pos += self.move
 
@@ -75,6 +72,7 @@ class Bee(Agent):
             p_leave = np.exp(-b * in_proximity)
         
             if p_leave > uniform_roll:
+                print(f"Leaving Site: {self.id}")
                 self.state = 3
 
 
