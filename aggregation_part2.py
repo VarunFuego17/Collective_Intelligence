@@ -172,6 +172,6 @@ df = (
 
 )
 
-plot = sns.relplot(x=df["frame"], y=df['agent'], hue=df["site_id"])
+plot = sns.relplot(x=df["frame"], y=df['agent'], hue=df["site_id"], kind='line')
 
 plot.savefig("plot.png", dpi=300)
