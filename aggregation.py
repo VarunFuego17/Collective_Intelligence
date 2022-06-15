@@ -22,7 +22,8 @@ class AggregationConfig(Config):
 
 class Bee(Agent):
     state: int = 0 # 0 -> wandering, 1 -> joining, 2 -> still, 3 -> leaving
-    t: int = r.randint(40,50)
+    t: int = 30 + round(r.normal(0,10)) # t = t_join = t_leave
+    d: int = 150 # number of time steps between each p_leave is evaluated
 
 
     config: Config
@@ -38,9 +39,12 @@ class Bee(Agent):
                 self.state = 1
 
     def join(self):
+        self.t -= 1
+        
         if self.t == 0:
+            
+            self.t = 40 + round(r.normal(0,10))
             print('stop movement')
-            self.t = 30
             self.state = 2
         else:
             print(self.t)
@@ -48,12 +52,30 @@ class Bee(Agent):
 
 
 
-    def still(self):
-        self.freeze_movement()
+    def still(self, in_proximity, b):
+        self.d -= 1
+        
+        if self.d == 0:
+            self.d = 70
+            
+            uniform_roll = r.uniform()
+            p_leave = np.exp(-b * in_proximity)
+        
+            if p_leave > uniform_roll:
+                print('Agent leaving')
+                self.state = 3
 
 
-    def leave(self, b):
-        pass
+    def leave(self):
+        self.t -= 1
+        
+        if self.t == 0:
+            print('start wandering again')
+            self.t = 40 + round(r.normal(0,10))
+            self.state = 0
+        else:
+            print(self.t)
+            self.pos += self.move
 
     def change_position(self):
         in_proximity = self.in_proximity_accuracy().count()
@@ -63,12 +85,11 @@ class Bee(Agent):
         if self.state == 0:
             self.wandering(in_proximity, a)
         if self.state == 1:
-            self.t -= 1
             self.join()
         if self.state == 2:
-            self.still()
+            self.still(in_proximity, b)
         if self.state == 3:
-            self.leave(b)
+            self.leave()
 
 
 
@@ -77,9 +98,9 @@ class Bee(Agent):
         AggregationConfig(
             image_rotation=True,
             movement_speed=1.5,
-            radius=30,
+            radius=40,
             seed=2,
-            fps_limit=60,
+            fps_limit=150,
         )
     )
         .spawn_site("bubble-full.png", 375, 375)
