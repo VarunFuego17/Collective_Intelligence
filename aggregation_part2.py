@@ -15,7 +15,6 @@ import seaborn as sns
 class AggregationConfig(Config):
     a: float = 2.6
     b: float = 2.2
-    
     t: int = round(r.normal(70,50)) # t = t_join = t_leave
     d: int = 300 # number of time steps between each p_leave is evaluated
     w: int = 500 # number of time steps it takes to move agent of site if not deciding to join or leaving
