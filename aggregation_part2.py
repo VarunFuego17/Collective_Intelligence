@@ -6,6 +6,8 @@ from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 import numpy as np
 from numpy import random as r
+import seaborn as sns
+
 
 
 @deserialize
@@ -14,31 +16,39 @@ class AggregationConfig(Config):
     a: float = 2.6
     b: float = 2.2
     
-    t: int = 30 + round(r.normal(0,10)) # t = t_join = t_leave
-    d: int = 130 # number of time steps between each p_leave is evaluated
+    t: int = round(r.normal(30,100)) # t = t_join = t_leave
+    d: int = 300 # number of time steps between each p_leave is evaluated
+    w: int = 500 # number of time steps it takes to move agent of site if not deciding to join or leaving
 
-    delta_time: float = 1.0
 
-    def weights(self) -> tuple[float, float, int, int]:
-        return (self.a, self.b, self.t, self.d)
+    def weights(self) -> tuple[float, float, int, int, int]:
+        return (self.a, self.b, self.t, self.d, self.w)
 
 
 class Bee(Agent):
-    state: int = 0 # 0 -> wandering, 1 -> joining, 2 -> still, 3 -> leaving
+    state = 0 # 0 -> wandering, 1 -> joining, 2 -> still, 3 -> leaving
     t_step = 0
     d_step = 0
+    w_step = 500
 
+    config: AggregationConfig
 
-    config: Config
-
-    def wandering(self, in_proximity, a):
+    def wandering(self, in_proximity, a, w):
         self.pos += self.move
         uniform_roll = r.uniform()
         p_join = 0.03 + 0.48 * (1 - np.exp(-a * in_proximity))
 
+
         if self.on_site():
-            if p_join > uniform_roll:
-                self.state = 1
+            if self.w_step == w:
+                if p_join > uniform_roll:
+                    print(f'Joining Site: {self.id}')
+                    self.state = 1
+            else:
+                self.w_step -=1
+
+        if self.w_step == 0:
+            self.w_step = 500
 
     def join(self, t):
         self.t_step += 1
@@ -54,7 +64,7 @@ class Bee(Agent):
 
     def still(self, in_proximity, b, d):
         self.d_step += 1
-        
+
         if self.d_step == d:
             self.d_step = 0
             
@@ -62,13 +72,14 @@ class Bee(Agent):
             p_leave = np.exp(-b * in_proximity)
         
             if p_leave > uniform_roll:
+                print(f"Leaving Site: {self.id}")
                 self.state = 3
 
 
-    def leave(self, t):
+    def leave(self, w):
         self.t_step += 1
         
-        if self.t_step == t:
+        if self.t_step == w:
             self.t_step = 0
             self.state = 0
         else:
@@ -76,20 +87,20 @@ class Bee(Agent):
 
     def change_position(self):
         in_proximity = self.in_proximity_accuracy().count()
-        a, b, t, d= self.config.weights()
+        a, b, t, d, w = self.config.weights()
         self.there_is_no_escape()
 
         if self.state == 0:
-            self.wandering(in_proximity, a)
+            self.wandering(in_proximity, a, w)
         if self.state == 1:
             self.join(t)
         if self.state == 2:
             self.still(in_proximity, b, d)
         if self.state == 3:
-            self.leave(t)
+            self.leave(w)
 
 
-'''class Selection(Enum):
+class Selection(Enum):
     A = auto()
     B = auto()
     T = auto()
@@ -131,19 +142,24 @@ class AggregationLive(Simulation):
                     self.selection = Selection.D
                     print('change')
 
-        a, b, t, d = self.config.weights()'''
+        a, b, t, d, _ = self.config.weights()
+        # print(f"A: {a:.1f} - C: {b:.1f} - T: {t:.1f} - D {d: .1f}")
+
 (
-    Simulation(
+    AggregationLive(
         AggregationConfig(
             image_rotation=True,
-            movement_speed=1.5,
-            radius=40,
-            seed=2,
-            fps_limit=200,
+            movement_speed=2.0,
+            radius=25,
+            seed=30,
+            fps_limit=60,
         )
     )
-        .spawn_site("bubble-full.png", 175, 375)
-        .spawn_site("bubble-small.png", 575, 375)
-        .batch_spawn_agents(50, Bee, images=["green.png"])
+        .spawn_site("site_medium.png", 200, 500)
+        .spawn_site("site_big.png", 700, 500)
+        .batch_spawn_agents(100, Bee, images=["bees.png"])
         .run()
+
+
 )
+
