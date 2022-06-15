@@ -136,10 +136,10 @@ class FlockingLive(Simulation):
             fps_limit =100,
         )
     )
-        .spawn_site("C:/Users/varun/OneDrive/Bureaublad/Artificial Intelligence/PCI/bubble-full.png", 500, 500)
+        .spawn_site("bubble-full.png", 500, 500)
 
-        .batch_spawn_agents(1000, Bird, images=["C:/Users/varun/OneDrive/Bureaublad/Artificial Intelligence/PCI/green.png",
-                                              "C:/Users/varun/OneDrive/Bureaublad/Artificial Intelligence/PCI/red.png",
-                                              "C:/Users/varun/OneDrive/Bureaublad/Artificial Intelligence/PCI/bird.png"])
+        .batch_spawn_agents(1000, Bird, images=["green.png",
+                                              "red.png",
+                                              "bird.png"])
         .run()
 )
