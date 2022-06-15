@@ -28,7 +28,7 @@ class Bee(Agent):
     state = 0 # 0 -> wandering, 1 -> joining, 2 -> still, 3 -> leaving
     t_step = 0
     d_step = 0
-    w_step = 500
+    w_step = 0
 
     config: AggregationConfig
 
@@ -39,14 +39,14 @@ class Bee(Agent):
 
 
         if self.on_site():
-            if self.w_step == w:
+            if self.w_step == 0:
                 if p_join > uniform_roll:
                     self.state = 1
             else:
-                self.w_step -=1
+                self.w_step +=1
 
-        if self.w_step == 0:
-            self.w_step = 500
+        if self.w_step == w:
+            self.w_step = 0
 
     def join(self, t):
         self.t_step += 1
