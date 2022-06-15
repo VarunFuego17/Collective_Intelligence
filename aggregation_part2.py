@@ -42,7 +42,6 @@ class Bee(Agent):
         if self.on_site():
             if self.w_step == w:
                 if p_join > uniform_roll:
-                    print(f'Joining Site: {self.id}')
                     self.state = 1
             else:
                 self.w_step -=1
@@ -56,7 +55,11 @@ class Bee(Agent):
         if self.t_step == t:
             
             self.t_step = 0
-            self.state = 2
+            
+            if self.on_site():
+                self.state = 2
+            else:
+                self.state = 0
         else:
             self.pos += self.move
 
@@ -72,7 +75,6 @@ class Bee(Agent):
             p_leave = np.exp(-b * in_proximity)
         
             if p_leave > uniform_roll:
-                print(f"Leaving Site: {self.id}")
                 self.state = 3
 
 
