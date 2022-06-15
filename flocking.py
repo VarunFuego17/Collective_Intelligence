@@ -135,7 +135,6 @@ class FlockingLive(Simulation):
             fps_limit =100,
         )
     )
-        .spawn_site("bubble-full.png", 500, 500)
 
         .batch_spawn_agents(1000, Bird, images=["green.png",
                                               "red.png",

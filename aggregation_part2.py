@@ -6,6 +6,7 @@ from vi import Agent, Simulation
 from vi.config import Config, dataclass, deserialize
 import numpy as np
 from numpy import random as r
+import polars as pl
 import seaborn as sns
 
 
@@ -100,6 +101,12 @@ class Bee(Agent):
             self.still(in_proximity, b, d)
         if self.state == 3:
             self.leave(w)
+            
+    def update(self):
+        if self.on_site_id() is not None:
+            self.save_data("site_id", self.on_site_id())
+        else:
+            self.save_data("site_id", 2)
 
 
 class Selection(Enum):
@@ -130,10 +137,8 @@ class AggregationLive(Simulation):
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_UP:
                     self.handle_event(by=1.0)
-                    print('change')
                 elif event.key == pg.K_DOWN:
                     self.handle_event(by=-1.0)
-                    print('change')
                 elif event.key == pg.K_1:
                     self.selection = Selection.A
                 elif event.key == pg.K_2:
@@ -142,12 +147,11 @@ class AggregationLive(Simulation):
                     self.selection = Selection.T
                 elif event.key == pg.K_4:
                     self.selection = Selection.D
-                    print('change')
 
         a, b, t, d, _ = self.config.weights()
         # print(f"A: {a:.1f} - C: {b:.1f} - T: {t:.1f} - D {d: .1f}")
 
-(
+df = (
     AggregationLive(
         AggregationConfig(
             image_rotation=True,
@@ -155,13 +159,19 @@ class AggregationLive(Simulation):
             radius=25,
             seed=30,
             fps_limit=60,
+            duration=8000
         )
     )
         .spawn_site("site_medium.png", 200, 500)
         .spawn_site("site_big.png", 700, 500)
         .batch_spawn_agents(100, Bee, images=["bees.png"])
         .run()
-
+        .snapshots.groupby(["frame","site_id"])
+        .agg(pl.count("id").alias("agent"))
+        .sort(["frame", "site_id"])
 
 )
 
+plot = sns.relplot(x=df["frame"], y=df['agent'], hue=df["site_id"])
+
+plot.savefig("plot.png", dpi=300)
