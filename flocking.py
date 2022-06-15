@@ -83,7 +83,6 @@ class Bird(Agent):
         self.pos += self.move
         in_proximity = self.in_proximity_accuracy().count()
         if self.on_site():
-            print("Agent: ", self.id)
             self.kill()
 
 
@@ -123,7 +122,7 @@ class FlockingLive(Simulation):
                     self.selection = Selection.SEPARATION
 
         a, c, s = self.config.weights()
-        # print(f"A: {a:.1f} - C: {c:.1f} - S: {s:.1f}")
+        print(f"A: {a:.1f} - C: {c:.1f} - S: {s:.1f}")
 
 
 (
