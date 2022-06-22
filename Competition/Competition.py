@@ -16,7 +16,7 @@ class CompetitionConfig(Config):
     hunger: int = 50  # time a fox has to wait before killing a rabbit
     r_rep: float = 0.8  # rabbit reproduction rate
     r_rep_buffer: int = 300  # time steps between each reproduction evaluation
-    offspring: int = 3 # range of offspring produced per reproduction
+    offspring: int = 3 # max offspring produced at reproduction
     align: bool = False # Turn alignment on or off
 
     def weights(self) -> tuple[int, int, float, int, int, bool]:
@@ -26,18 +26,24 @@ class CompetitionConfig(Config):
 class Fox(Agent):
     energy_t: int = 0
     hunger_t: int = 0
+    alignment_max: int = 3
 
     config: CompetitionConfig
 
 
     def alignment(self):
+        """
+        When turned on, alignment will steer the direction
+        of x Foxes within radius r to the average direction
+        of the x Foxes
+        """
         vectors = np.array([[self.move[0]],[self.move[1]]])
         count = self.in_proximity_accuracy().count()
         fox =   (self.in_proximity_accuracy()
                  .filter_kind(Fox)
         )
 
-        if fox.count() == 3:
+        if fox.count() == self.alignment_max:
             scalar = 1 / (count)
             for agent, distance in fox:
 
