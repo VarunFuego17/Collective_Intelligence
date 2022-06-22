@@ -28,11 +28,6 @@ class Fox(Agent):
 
     config: CompetitionConfig
 
-    def wandering(self):
-        "Random walk"
-        self.pos = self.pos + self.move
-        return self.pos
-
     def check_survival(self, energy):
         """
         Kills fox if energy is 0
@@ -47,8 +42,8 @@ class Fox(Agent):
         might need some others calls whenever exploring beyond base case.
         for now it just kills the rabbits.
         """
-        sample = r.uniform()
-        if r_death > sample:
+        roll = r.uniform()
+        if r_death > roll:
             print('KILL')
             self.energy_t = 0
             agent.kill()
@@ -62,8 +57,10 @@ class Fox(Agent):
             self.reproduce()
 
 
-
     def change_position(self):
+        self.pos += self.move
+        
+    def update(self):
         in_proximity = self.in_proximity_accuracy()
         count = self.in_proximity_accuracy().count()
         energy, hunger, _, f_rep, r_death, _ = self.config.weights()  # init params
@@ -81,9 +78,6 @@ class Fox(Agent):
 
         self.energy_t += 1
         self.hunger_t += 1
-
-        self.wandering()  # updating movement of fox
-
 
 class Rabbit(Agent):
     config: CompetitionConfig
@@ -129,8 +123,8 @@ class Rabbit(Agent):
             window=Window.square(1000),
         )
     )
-        .batch_spawn_agents(20, Fox, images=["red.png"])
-        .batch_spawn_agents(40, Rabbit, images=["green.png"])
+        .batch_spawn_agents(100, Fox, images=["red.png"])
+        .batch_spawn_agents(100, Rabbit, images=["green.png"])
         .run()
     # .snapshots.groupby(["frame","site_id"])
     # .agg(pl.count("id").alias("agent"))
