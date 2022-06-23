@@ -84,6 +84,7 @@ class Bird(Agent):
         in_proximity = self.in_proximity_accuracy().count()
         if self.on_site():
             self.kill()
+        self.p
 
 
 

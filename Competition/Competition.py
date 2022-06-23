@@ -12,46 +12,24 @@ from pygame.math import Vector2
 @dataclass
 class CompetitionConfig(Config):
     fox_energy: int = 500  # initial energy level of a fox
-    hunger: int = 70  # time a fox has to wait before killing a rabbit
+    hunger: int = 60  # time a fox has to wait before killing a rabbit
     r_rep: float = 0.8  # rabbit reproduction rate
-    r_rep_buffer: int = 200  # time steps between each reproduction evaluation
-    offspring: int = 3 # max offspring produced at reproduction
-    align: bool = True # Turn alignment on or off
+    r_rep_buffer: int = 300  # time steps between each reproduction evaluation
+    offspring: int = 2 # max offspring produced at reproduction
+    hunting_radius: int = 15 # mating radius
+    stress_deviation: float = 0.3
 
-    def weights(self) -> tuple[int, int, float, int, int, bool]:
-        return (self.fox_energy, self.hunger, self.r_rep, self.r_rep_buffer, self.offspring, self.align)
+    def weights(self) -> tuple[int, int, float, int, int, int, float]:
+        return (self.fox_energy, self.hunger, self.r_rep, self.r_rep_buffer, self.offspring, self.hunting_radius, self.stress_deviation)
 
 
 class Fox(Agent):
     energy_t: int = 0
     hunger_t: int = 0
-    alignment_max: int = 3
+    alignment_max: int = 2
 
     config: CompetitionConfig
-    
-    def alignment(self):
-        """
-        When turned on, alignment will steer the direction
-        of x Foxes within radius r to the average direction
-        of the x Foxes
-        """
-        vectors = np.array([[self.move[0]],[self.move[1]]])
-        count = self.in_proximity_accuracy().count()
-        fox =   (self.in_proximity_accuracy()
-                 .filter_kind(Fox)
-        )
 
-        if fox.count() == self.alignment_max:
-            scalar = 1 / (count)
-            for agent, distance in fox:
-
-               vectors = np.append(vectors, np.array([[agent.move[0]],[agent.move[1]]]), axis=1)
-
-            new_move = scalar * np.sum(vectors, axis=1)
-            new_move = Vector2(new_move[0], new_move[1]).normalize()
-            return new_move - self.move
-        else:
-            return self.move
 
     def check_survival(self, energy):
         """
@@ -61,21 +39,21 @@ class Fox(Agent):
             print(f"FOX: {self.id} died")
             self.kill()
 
-    def consume(self, hunger, offspring):
+    def consume(self, hunger, offspring, hunting_radius):
         """
         Checks whether there are nearby rabbits to consume and eventually does
         """
         if self.hunger_t == hunger:
             self.hunger_t = 0
             prey = (self.in_proximity_accuracy()
-                   .without_distance()
                    .filter_kind(Rabbit)
                    .first())
-                
+
             if prey is not None:
-                prey.kill()
-                self.energy_t = 0
-                self.reproduction(offspring)
+                if prey[1] < hunting_radius:
+                    prey[0].kill()
+                    self.energy_t = 0
+                    self.reproduction(offspring)
         
     def reproduction(self, offspring):
         """
@@ -96,21 +74,16 @@ class Fox(Agent):
 
     def change_position(self):
         self.there_is_no_escape()
-        
-        _, _, _, _, _, align = self.config.weights()
-        self.there_is_no_escape()
-        if align:
-            self.pos += self.alignment()
-        else:
-            self.pos += self.move
-        
+        self.pos += self.move
+
+
     def update(self):
         self.save_data("agent_type", 1)
         
-        energy, hunger, _, _, offspring, _ = self.config.weights()  # init params
+        energy, hunger, _, _, offspring, hunting_radius, _ = self.config.weights()  # init params
 
         self.check_survival(energy)  # kill fox if no energy is left
-        self.consume(hunger, offspring)
+        self.consume(hunger, offspring, hunting_radius)
 
         self.energy_t += 1
         self.hunger_t += 1
@@ -121,7 +94,7 @@ class Rabbit(Agent):
     
     config: CompetitionConfig
 
-    def reproduction(self, r_rep, r_rep_buffer, offspring):
+    def reproduction(self, r_rep, r_rep_buffer, offspring, stress_deviation):
         """
         Reproduction of Rabbits
         """
@@ -130,17 +103,25 @@ class Rabbit(Agent):
                     .without_distance()
                     .filter_kind(Rabbit)
                     .first())
-        
+
             if mate is not None:
                 roll = r.uniform()
+
+                if self.in_proximity_accuracy().filter_kind(Fox).count() > 0:
+                    r_bias = r.normal(0, stress_deviation)
+                    r_rep -= abs(r_bias)
+
+
+
                 if roll > r_rep:
+                    self.r_rep_buffer_t = 0
                     for i in range(r.randint(1, offspring)):
                         new_x = r.uniform()
                         new_y = r.uniform()
 
                         self.reproduce().move = Vector2(new_x, new_y)
 
-                    self.r_rep_buffer_t = 0
+                    print(self.r_rep_buffer_t)
         else:
             self.r_rep_buffer_t += 1
         
@@ -154,8 +135,8 @@ class Rabbit(Agent):
     def update(self):
         self.save_data("agent_type", 2)
         
-        _, _, r_rep, r_rep_buffer, offspring, _ = self.config.weights()  # init params
-        self.reproduction(r_rep, r_rep_buffer, offspring)
+        _, _, r_rep, r_rep_buffer, offspring, _, stress_deviation = self.config.weights()  # init params
+        self.reproduction(r_rep, r_rep_buffer, offspring, stress_deviation)
         
 
 
@@ -164,11 +145,11 @@ df = (
         CompetitionConfig(
             image_rotation=True,
             movement_speed=1.5,
-            radius=25,
+            radius=50,
             seed=30,
             fps_limit=60,
+            duration=10000,
             window=Window.square(700),
-            duration=500
         )
     )
         .batch_spawn_agents(100, Fox, images=["Fox.png"])
