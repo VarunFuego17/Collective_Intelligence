@@ -12,7 +12,7 @@ from pygame.math import Vector2
 @dataclass
 class CompetitionConfig(Config):
     fox_energy: int = 500  # initial energy level of a fox
-    hunger: int = 50  # time a fox has to wait before killing a rabbit
+    hunger: int = 70  # time a fox has to wait before killing a rabbit
     r_rep: float = 0.8  # rabbit reproduction rate
     r_rep_buffer: int = 200  # time steps between each reproduction evaluation
     offspring: int = 3 # max offspring produced at reproduction
@@ -131,12 +131,12 @@ class Rabbit(Agent):
             if mate is not None:
                 roll = r.uniform()
                 if roll > r_rep:
-                    new_x = r.uniform()
-                    new_y = r.uniform()
-                    
-                    self.reproduce()
-                    self.move = Vector2(new_x, new_y)
-                    
+                    for i in range(r.randint(1, offspring)):
+                        new_x = r.uniform()
+                        new_y = r.uniform()
+
+                        self.reproduce().move = Vector2(new_x, new_y)
+
                     self.r_rep_buffer_t = 0
         else:
             self.r_rep_buffer_t += 1
@@ -164,8 +164,8 @@ class Rabbit(Agent):
             window=Window.square(700),
         )
     )
-        .batch_spawn_agents(100, Fox, images=["Fox.png"])
-        .batch_spawn_agents(100, Rabbit, images=["Rabbit.png"])
+        .batch_spawn_agents(1, Fox, images=["Fox.png"])
+        .batch_spawn_agents(10, Rabbit, images=["Rabbit.png"])
         .run()
     # .snapshots.groupby(["frame","site_id"])
     # .agg(pl.count("id").alias("agent"))
