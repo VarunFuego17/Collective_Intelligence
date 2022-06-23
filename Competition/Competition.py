@@ -105,6 +105,8 @@ class Fox(Agent):
             self.pos += self.move
         
     def update(self):
+        self.save_data("agent_type", 1)
+        
         energy, hunger, _, _, offspring, _ = self.config.weights()  # init params
 
         self.check_survival(energy)  # kill fox if no energy is left
@@ -112,6 +114,7 @@ class Fox(Agent):
 
         self.energy_t += 1
         self.hunger_t += 1
+        
 
 class Rabbit(Agent):
     r_rep_buffer_t = 0
@@ -149,11 +152,14 @@ class Rabbit(Agent):
         
         
     def update(self):
+        self.save_data("agent_type", 2)
+        
         _, _, r_rep, r_rep_buffer, offspring, _ = self.config.weights()  # init params
         self.reproduction(r_rep, r_rep_buffer, offspring)
+        
 
 
-(
+df = (
     Simulation(
         CompetitionConfig(
             image_rotation=True,
@@ -162,13 +168,18 @@ class Rabbit(Agent):
             seed=30,
             fps_limit=60,
             window=Window.square(700),
+            duration=500
         )
     )
-        .batch_spawn_agents(1, Fox, images=["Fox.png"])
-        .batch_spawn_agents(10, Rabbit, images=["Rabbit.png"])
+        .batch_spawn_agents(100, Fox, images=["Fox.png"])
+        .batch_spawn_agents(100, Rabbit, images=["Rabbit.png"])
         .run()
-    # .snapshots.groupby(["frame","site_id"])
-    # .agg(pl.count("id").alias("agent"))
-    # .sort(["frame", "site_id"])
+        .snapshots.groupby(["frame","agent_type"])
+        .agg(pl.count("id").alias("agent"))
+        .sort(["frame", "agent_type"])
 
 )
+
+plot = sns.relplot(x=df["frame"], y=df['agent'], hue=df["agent_type"], kind='line')
+
+plot.savefig("plot.png", dpi=300)
