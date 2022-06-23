@@ -15,15 +15,17 @@ class CompetitionConfig(Config):
     hunger: int = 50  # time a fox has to wait before killing a rabbit
     r_rep: float = 0.8  # rabbit reproduction rate
     r_rep_buffer: int = 200  # time steps between each reproduction evaluation
+    offspring: int = 3 # max offspring produced at reproduction
     align: bool = True # Turn alignment on or off
 
-    def weights(self) -> tuple[int, int, float, int, bool]:
-        return (self.fox_energy, self.hunger, self.r_rep, self.r_rep_buffer, self.align)
+    def weights(self) -> tuple[int, int, float, int, int, bool]:
+        return (self.fox_energy, self.hunger, self.r_rep, self.r_rep_buffer, self.offspring, self.align)
 
 
 class Fox(Agent):
     energy_t: int = 0
     hunger_t: int = 0
+    alignment_max: int = 3
 
     config: CompetitionConfig
     
@@ -59,7 +61,7 @@ class Fox(Agent):
             print(f"FOX: {self.id} died")
             self.kill()
 
-    def consume(self, hunger):
+    def consume(self, hunger, offspring):
         """
         Checks whether there are nearby rabbits to consume and eventually does
         """
@@ -73,9 +75,9 @@ class Fox(Agent):
             if prey is not None:
                 prey.kill()
                 self.energy_t = 0
-                self.reproduction()
+                self.reproduction(offspring)
         
-    def reproduction(self):
+    def reproduction(self, offspring):
         """
         Reproduction of foxes gives some probability
         """
@@ -85,13 +87,17 @@ class Fox(Agent):
                .first())
         
         if mate is not None:
-            self.reproduce()
+            for i in range(r.randint(1,offspring)):
+                new_x = r.uniform()
+                new_y = r.uniform()
+                self.reproduce()
+                self.move = Vector2(new_x, new_y)
 
 
     def change_position(self):
         self.there_is_no_escape()
         
-        _, _, _, _, align = self.config.weights()
+        _, _, _, _, _, align = self.config.weights()
         self.there_is_no_escape()
         if align:
             self.pos += self.alignment()
@@ -99,10 +105,10 @@ class Fox(Agent):
             self.pos += self.move
         
     def update(self):
-        energy, hunger, _, _, _ = self.config.weights()  # init params
+        energy, hunger, _, _, offspring, _ = self.config.weights()  # init params
 
         self.check_survival(energy)  # kill fox if no energy is left
-        self.consume(hunger)
+        self.consume(hunger, offspring)
 
         self.energy_t += 1
         self.hunger_t += 1
@@ -112,7 +118,7 @@ class Rabbit(Agent):
     
     config: CompetitionConfig
 
-    def reproduction(self, r_rep, r_rep_buffer):
+    def reproduction(self, r_rep, r_rep_buffer, offspring):
         """
         Reproduction of Rabbits
         """
@@ -143,8 +149,8 @@ class Rabbit(Agent):
         
         
     def update(self):
-        _, _, r_rep, r_rep_buffer, _ = self.config.weights()  # init params
-        self.reproduction(r_rep, r_rep_buffer)
+        _, _, r_rep, r_rep_buffer, offspring, _ = self.config.weights()  # init params
+        self.reproduction(r_rep, r_rep_buffer, offspring)
 
 
 (
