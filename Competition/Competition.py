@@ -10,13 +10,13 @@ import matplotlib.pyplot as plt
 @dataclass
 class CompetitionConfig(Config):
     fox_energy: int = 500  # initial energy level of a fox
-    hunger: int = 60  # time a fox has to wait before killing a rabbit
+    hunger: int = 50  # time a fox has to wait before killing a rabbit
     r_rep: float = 0.8  # rabbit reproduction rate
     r_rep_buffer: int = 120  # time steps between each reproduction evaluation
     offspring: int = 2 # max offspring produced at reproduction
     reach_radius: int = 15 # mating and hunting radius
     stress_deviation: float = 0.5
-    t: int = round(r.normal(20,10)) # join buffer 
+    t: int = round(r.normal(30,10)) # join buffer 
     shelter_capacity: int = 15
 
     def weights(self) -> tuple[int, int, float, int, int, int, float, int, int]:
@@ -113,7 +113,7 @@ class Rabbit(Agent):
             if mate is not None and mate[1] < reach_radius:
                 roll = r.uniform()
 
-                if self.in_proximity_accuracy().filter_kind(Fox).count() > 0:
+                if self.in_proximity_accuracy().filter_kind(Fox).count() > 0 and not self.on_site():
                     r_bias = r.normal(0, stress_deviation)
                     r_rep -= abs(r_bias)
 
@@ -204,7 +204,7 @@ df = (
               )
           )
       .batch_spawn_agents(100, Fox, images=["Fox.png"])
-      .batch_spawn_agents(500, Rabbit, images=["Rabbit.png"])
+      .batch_spawn_agents(100, Rabbit, images=["Rabbit.png"])
       .spawn_site("site_small.png", 600, 350)
       .run()
       .snapshots.groupby(["frame","agent_type"])
